@@ -1,0 +1,188 @@
+/* Jory brand overrides for Jazzmin/AdminLTE.
+   Repaints Bootstrap's blue "primary" with the maroon from the Jory logo. */
+
+:root {
+    --jory-maroon: #7a292a;
+    --jory-maroon-dark: #5c1f20;
+    --jory-maroon-light: #9c4142;
+    --jory-cream: #fbf8f4;
+    --jory-sand: #e7ddd1;
+    --jory-ink: #3a2c28;
+}
+
+/* --- Brand header (sidebar top) --------------------------------------- */
+
+.main-sidebar .brand-link {
+    background-color: #fff;
+    border-bottom: 1px solid var(--jory-sand);
+    padding-top: .6rem;
+    padding-bottom: .6rem;
+}
+
+/* The logo is a 2:1 wordmark, not a square avatar — give it room and never
+   let AdminLTE's circle crop slice it. */
+.main-sidebar .brand-image {
+    max-height: 38px;
+    width: auto;
+    margin-top: -2px;
+    border-radius: 0;
+    box-shadow: none;
+    opacity: 1;
+}
+
+.main-sidebar .brand-text {
+    color: var(--jory-maroon);
+    font-weight: 600;
+}
+
+/* --- Sidebar ---------------------------------------------------------- */
+
+.main-sidebar {
+    background-color: var(--jory-cream);
+}
+
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active,
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-treeview > .nav-item > .nav-link.active,
+.nav-sidebar .nav-link.active {
+    background-color: var(--jory-maroon) !important;
+    color: #fff !important;
+    box-shadow: none;
+}
+
+.nav-sidebar .nav-link:hover {
+    background-color: rgba(122, 41, 42, .08);
+    color: var(--jory-maroon-dark);
+}
+
+.nav-sidebar .nav-header {
+    color: var(--jory-maroon-light);
+    text-transform: uppercase;
+    font-size: .72rem;
+    letter-spacing: .05em;
+}
+
+/* --- Buttons, links, badges ------------------------------------------- */
+
+a {
+    color: var(--jory-maroon);
+}
+
+a:hover,
+a:focus {
+    color: var(--jory-maroon-dark);
+}
+
+.btn-primary,
+.btn-primary:not(:disabled):not(.disabled).active,
+.btn-primary:not(:disabled):not(.disabled):active {
+    background-color: var(--jory-maroon);
+    border-color: var(--jory-maroon);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--jory-maroon-dark);
+    border-color: var(--jory-maroon-dark);
+}
+
+.btn-primary:focus,
+.btn-primary.focus,
+.btn-outline-primary:focus {
+    box-shadow: 0 0 0 .2rem rgba(122, 41, 42, .35);
+}
+
+.btn-outline-primary {
+    color: var(--jory-maroon);
+    border-color: var(--jory-maroon);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--jory-maroon);
+    border-color: var(--jory-maroon);
+    color: #fff;
+}
+
+.bg-primary,
+.badge-primary,
+.page-item.active .page-link,
+.custom-control-input:checked ~ .custom-control-label::before {
+    background-color: var(--jory-maroon) !important;
+    border-color: var(--jory-maroon) !important;
+}
+
+.text-primary {
+    color: var(--jory-maroon) !important;
+}
+
+.page-link {
+    color: var(--jory-maroon);
+}
+
+/* --- Cards, tabs, forms ----------------------------------------------- */
+
+.card-primary:not(.card-outline) > .card-header,
+.card-primary.card-outline {
+    background-color: var(--jory-maroon);
+    border-top-color: var(--jory-maroon);
+}
+
+.card-primary:not(.card-outline) > .card-header {
+    color: #fff;
+}
+
+.card-primary.card-outline {
+    background-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    border-top: 2px solid var(--jory-maroon);
+    color: var(--jory-maroon);
+    font-weight: 600;
+}
+
+.form-control:focus,
+.select2-container--default .select2-selection--single:focus {
+    border-color: var(--jory-maroon-light);
+    box-shadow: 0 0 0 .2rem rgba(122, 41, 42, .18);
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results__option[aria-selected="true"] {
+    background-color: var(--jory-maroon);
+}
+
+/* --- Login page ------------------------------------------------------- */
+
+.login-page,
+.register-page {
+    background-color: var(--jory-cream);
+}
+
+.login-logo img {
+    max-height: 90px;
+    width: auto;
+}
+
+.login-card-body {
+    border-top: 3px solid var(--jory-maroon);
+}
+
+/* --- Misc ------------------------------------------------------------- */
+
+.main-header.navbar {
+    border-bottom: 1px solid var(--jory-sand);
+}
+
+.content-wrapper {
+    background-color: #f7f4f0;
+}
+
+/* Django admin's own "addlink/changelink" icons and calendar widget pick up
+   the default blue from admin's base.css, which loads after Bootstrap. */
+.paginator a:link,
+.paginator a:visited,
+.object-tools a:link,
+.object-tools a:visited {
+    background-color: var(--jory-maroon);
+    color: #fff;
+}
