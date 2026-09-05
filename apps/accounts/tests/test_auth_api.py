@@ -10,6 +10,7 @@ def test_register_creates_a_user_and_returns_it(api_client):
         "/api/auth/register/",
         {
             "email": "new@example.com",
+            "username": "new_shopper",
             "full_name": "New Shopper",
             "phone": "+201111111111",
             "password": "StrongPassw0rd!",
@@ -19,8 +20,24 @@ def test_register_creates_a_user_and_returns_it(api_client):
     )
     assert response.status_code == 201
     assert response.data["email"] == "new@example.com"
+    assert response.data["username"] == "new_shopper"
     assert "password" not in response.data
     assert User.objects.filter(email="new@example.com").exists()
+
+
+def test_register_requires_a_username(api_client):
+    response = api_client.post(
+        "/api/auth/register/",
+        {
+            "email": "new@example.com",
+            "full_name": "New Shopper",
+            "password": "StrongPassw0rd!",
+            "password_confirm": "StrongPassw0rd!",
+        },
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "username" in response.data["error"]["details"]
 
 
 def test_register_rejects_mismatched_password_confirmation(api_client):
@@ -28,6 +45,7 @@ def test_register_rejects_mismatched_password_confirmation(api_client):
         "/api/auth/register/",
         {
             "email": "new@example.com",
+            "username": "new_shopper",
             "full_name": "New Shopper",
             "password": "StrongPassw0rd!",
             "password_confirm": "DifferentPassw0rd!",
@@ -43,6 +61,7 @@ def test_register_rejects_a_weak_password(api_client):
         "/api/auth/register/",
         {
             "email": "new@example.com",
+            "username": "new_shopper",
             "full_name": "New Shopper",
             "password": "123",
             "password_confirm": "123",
@@ -58,6 +77,22 @@ def test_register_rejects_a_duplicate_email(api_client, user):
         "/api/auth/register/",
         {
             "email": user.email,
+            "username": "impostor",
+            "full_name": "Impostor",
+            "password": "StrongPassw0rd!",
+            "password_confirm": "StrongPassw0rd!",
+        },
+        format="json",
+    )
+    assert response.status_code == 400
+
+
+def test_register_rejects_a_duplicate_username(api_client, user):
+    response = api_client.post(
+        "/api/auth/register/",
+        {
+            "email": "impostor@example.com",
+            "username": user.username,
             "full_name": "Impostor",
             "password": "StrongPassw0rd!",
             "password_confirm": "StrongPassw0rd!",
@@ -76,6 +111,17 @@ def test_login_returns_tokens_and_the_user(api_client, user, user_password):
     assert response.status_code == 200
     assert response.data["access"]
     assert response.data["refresh"]
+    assert response.data["user"]["email"] == user.email
+
+
+def test_login_with_username_returns_tokens_and_the_user(api_client, user, user_password):
+    response = api_client.post(
+        "/api/auth/login/",
+        {"email": user.username, "password": user_password},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.data["access"]
     assert response.data["user"]["email"] == user.email
 
 

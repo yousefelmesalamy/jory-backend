@@ -89,7 +89,7 @@ def test_the_product_detail_includes_variants_and_the_coffee_profile(api_client,
     assert {v["sku"] for v in response.data["variants"]} == {"JORY-ETH-250", "JORY-ETH-1000"}
     assert response.data["coffee_profile"]["origin"]["slug"] == "ethiopia"
     assert response.data["coffee_profile"]["origin"]["name"] == "Ethiopia"
-    assert response.data["coffee_profile"]["process"] == "WASHED"
+    assert response.data["coffee_profile"]["process"]["value"] == "WASHED"
 
 
 def test_variant_payloads_expose_the_derived_sale_fields(api_client, product):

@@ -33,6 +33,7 @@ def user(db, user_password):
     return get_user_model().objects.create_user(
         email="shopper@example.com",
         password=user_password,
+        username="shopper_one",
         full_name="Shopper One",
         phone="+201000000000",
     )
@@ -43,6 +44,7 @@ def other_user(db, user_password):
     return get_user_model().objects.create_user(
         email="other@example.com",
         password=user_password,
+        username="shopper_two",
         full_name="Shopper Two",
     )
 
@@ -52,6 +54,7 @@ def staff_user(db, user_password):
     return get_user_model().objects.create_superuser(
         email="staff@example.com",
         password=user_password,
+        username="staff_member",
         full_name="Staff Member",
     )
 

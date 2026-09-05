@@ -12,8 +12,8 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "full_name", "phone", "date_joined"]
-        read_only_fields = ["id", "email", "date_joined"]
+        fields = ["id", "email", "username", "full_name", "phone", "date_joined"]
+        read_only_fields = ["id", "email", "username", "date_joined"]
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -22,7 +22,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "full_name", "phone", "password", "password_confirm", "date_joined"]
+        fields = [
+            "id", "email", "username", "full_name", "phone",
+            "password", "password_confirm", "date_joined",
+        ]
         read_only_fields = ["id", "date_joined"]
 
     def validate_email(self, value):
@@ -30,6 +33,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         if User.objects.filter(email__iexact=normalized).exists():
             raise serializers.ValidationError("An account with this email already exists.")
         return normalized
+
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("An account with this username already exists.")
+        return value
 
     def validate_password(self, value):
         try:
@@ -50,9 +58,20 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(TokenObtainPairSerializer):
+    """Accepts either the email or the username in the identifier field
+    (still named "email" for backward compatibility with existing clients),
+    then resolves it to the account's email before handing off to SimpleJWT,
+    since `User.USERNAME_FIELD` is "email"."""
+
     username_field = User.USERNAME_FIELD
 
     def validate(self, attrs):
+        identifier = attrs.get(self.username_field, "")
+        if identifier and "@" not in identifier:
+            user = User.objects.filter(username__iexact=identifier).first()
+            if user:
+                attrs[self.username_field] = user.email
+
         data = super().validate(attrs)
         data["user"] = UserSerializer(self.user).data
         return data
