@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -130,7 +131,15 @@ MEDIA_URL = env("MEDIA_URL", default="media/")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+
+# X-Cart-Token needs both halves, and they are not symmetric:
+# EXPOSE lets the browser *read* it off the response, ALLOW_HEADERS lets the
+# browser *send* it on the next request. With only the first, the guest-cart
+# interceptor's `X-Cart-Token` request header fails preflight and /api/cart/ is
+# the one endpoint that dies with a CORS error while everything else works.
+# Invisible in local development, where the dev proxy makes it same-origin.
 CORS_EXPOSE_HEADERS = ["X-Cart-Token"]
+CORS_ALLOW_HEADERS = [*default_headers, "x-cart-token"]
 
 # The storefront is served from a different origin than the API (Vercel vs. the
 # API host), so the admin's own forms are the only CSRF surface — but Django 4
