@@ -120,6 +120,7 @@ class Origin(TimeStampedModel):
     set of choices instead of matching free text."""
 
     name = models.CharField(max_length=100, unique=True)
+    name_ar = models.CharField(max_length=100, blank=True)
     slug = models.SlugField(max_length=120, unique=True, blank=True)
     is_active = models.BooleanField(default=True)
 

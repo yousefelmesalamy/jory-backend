@@ -117,8 +117,8 @@ def _enum_options(choices, labels_ar, locale):
 
 
 def _rows_to_options(rows, locale):
-    """Lookup rows -> options. `name_ar` is optional: Origin and Roaster have no
-    Arabic column and fall back to their English name."""
+    """Lookup rows -> options. `name_ar` is optional: Roaster has no Arabic
+    column and falls back to its English name."""
     return [
         {
             "value": row.slug,

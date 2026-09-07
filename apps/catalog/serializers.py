@@ -125,6 +125,8 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
 
 class OriginSerializer(serializers.ModelSerializer):
+    name = LocalizedField()
+
     class Meta:
         model = Origin
         fields = ["id", "name", "slug"]
