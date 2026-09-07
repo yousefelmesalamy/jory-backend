@@ -1,7 +1,13 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from .views import CategoryViewSet, ProductViewSet, RoasterViewSet, SearchSuggestView
+from .views import (
+    CategoryViewSet,
+    FacetsView,
+    ProductViewSet,
+    RoasterViewSet,
+    SearchSuggestView,
+)
 
 app_name = "catalog"
 
@@ -14,5 +20,6 @@ router.register("products", ProductViewSet, basename="product")
 urlpatterns = [
     # Registered before the router so a future catch-all route cannot shadow it.
     path("search/suggest/", SearchSuggestView.as_view(), name="search-suggest"),
+    path("facets/", FacetsView.as_view(), name="facets"),
     path("", include(router.urls)),
 ]

@@ -4,6 +4,22 @@ from django.utils.text import slugify
 from apps.core.models import TimeStampedModel
 
 
+# Declared above Category, which types itself with it.
+class ProductType(models.TextChoices):
+    COFFEE = "COFFEE", "Coffee"
+    EQUIPMENT = "EQUIPMENT", "Equipment"
+    ROASTING_MACHINE = "ROASTING_MACHINE", "Roasting machine"
+    ACCESSORY = "ACCESSORY", "Accessory"
+
+
+PRODUCT_TYPE_LABELS_AR = {
+    ProductType.COFFEE: "قهوة",
+    ProductType.EQUIPMENT: "معدات",
+    ProductType.ROASTING_MACHINE: "محمصة",
+    ProductType.ACCESSORY: "إكسسوارات",
+}
+
+
 class Category(TimeStampedModel):
     """Browse taxonomy. One nesting level is expected (Coffee → Single Origin)."""
 
@@ -18,6 +34,9 @@ class Category(TimeStampedModel):
     image = models.ImageField(upload_to="categories/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveIntegerField(default=0)
+    # Blank means "inherit from the parent". Drives which filter facets a
+    # category exposes — see apps/catalog/facets.py.
+    product_type = models.CharField(max_length=20, choices=ProductType.choices, blank=True)
 
     class Meta:
         ordering = ["display_order", "name"]
@@ -38,6 +57,16 @@ class Category(TimeStampedModel):
             ids.extend(child.descendant_ids())
         return ids
 
+    @property
+    def effective_product_type(self):
+        """Own type, else the parent's, else coffee. The tree is one level deep
+        by design, so this recursion is at most two hops."""
+        if self.product_type:
+            return self.product_type
+        if self.parent_id:
+            return self.parent.effective_product_type
+        return ProductType.COFFEE
+
 
 class Roaster(TimeStampedModel):
     """A roastery brand whose coffee Jory stocks."""
@@ -49,6 +78,29 @@ class Roaster(TimeStampedModel):
     bio = models.TextField(blank=True)
     bio_ar = models.TextField(blank=True)
     website = models.URLField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class Brand(TimeStampedModel):
+    """A manufacturer of equipment or roasting machines. Kept separate from
+    `Roaster`: a roastery sells beans, and its `bio` reads as coffee copy."""
+
+    name = models.CharField(max_length=150)
+    name_ar = models.CharField(max_length=150, blank=True)
+    slug = models.SlugField(max_length=170, unique=True, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    logo = models.ImageField(upload_to="brands/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -81,21 +133,6 @@ class Origin(TimeStampedModel):
 
     def __str__(self):
         return self.name
-
-
-class ProductType(models.TextChoices):
-    COFFEE = "COFFEE", "Coffee"
-    EQUIPMENT = "EQUIPMENT", "Equipment"
-    ROASTING_MACHINE = "ROASTING_MACHINE", "Roasting machine"
-    ACCESSORY = "ACCESSORY", "Accessory"
-
-
-PRODUCT_TYPE_LABELS_AR = {
-    ProductType.COFFEE: "قهوة",
-    ProductType.EQUIPMENT: "معدات",
-    ProductType.ROASTING_MACHINE: "محمصة",
-    ProductType.ACCESSORY: "إكسسوارات",
-}
 
 
 class Grind(models.TextChoices):
@@ -144,6 +181,27 @@ ROAST_LEVEL_LABELS_AR = {
     RoastLevel.MEDIUM: "متوسطة",
     RoastLevel.MEDIUM_DARK: "متوسطة إلى داكنة",
     RoastLevel.DARK: "داكنة",
+}
+
+
+class MachineType(models.TextChoices):
+    DRUM_ROASTER = "DRUM_ROASTER", "Drum roaster"
+    FLUID_BED_ROASTER = "FLUID_BED_ROASTER", "Fluid-bed roaster"
+    SAMPLE_ROASTER = "SAMPLE_ROASTER", "Sample roaster"
+    GRINDER = "GRINDER", "Grinder"
+    BREWER = "BREWER", "Brewer"
+    KETTLE = "KETTLE", "Kettle"
+    OTHER = "OTHER", "Other"
+
+
+MACHINE_TYPE_LABELS_AR = {
+    MachineType.DRUM_ROASTER: "محمصة أسطوانية",
+    MachineType.FLUID_BED_ROASTER: "محمصة هوائية",
+    MachineType.SAMPLE_ROASTER: "محمصة عينات",
+    MachineType.GRINDER: "مطحنة",
+    MachineType.BREWER: "أداة تحضير",
+    MachineType.KETTLE: "غلاية",
+    MachineType.OTHER: "أخرى",
 }
 
 
@@ -297,3 +355,23 @@ class CoffeeProfile(TimeStampedModel):
 
     def __str__(self):
         return f"{self.product.name} — {self.origin}"
+
+
+class HardwareProfile(TimeStampedModel):
+    """Attributes only machines and equipment have. Absent for coffee — the
+    mirror image of CoffeeProfile."""
+
+    product = models.OneToOneField(
+        Product, on_delete=models.CASCADE, related_name="hardware_profile"
+    )
+    brand = models.ForeignKey(
+        Brand,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="hardware_profiles",
+    )
+    machine_type = models.CharField(max_length=30, choices=MachineType.choices, blank=True)
+
+    def __str__(self):
+        return f"{self.product.name} — {self.brand or 'unbranded'}"

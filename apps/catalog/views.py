@@ -5,6 +5,9 @@ from rest_framework import mixins, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.i18n import get_locale
+
+from .facets import build_facets
 from .filters import ProductFilter
 from .models import Category, Product, ProductVariant, Roaster
 from .serializers import (
@@ -86,7 +89,7 @@ class ProductViewSet(
         active_variants = ProductVariant.objects.filter(product=OuterRef("pk"), is_active=True)
         return (
             Product.objects.filter(is_active=True)
-            .select_related("category", "roaster", "coffee_profile")
+            .select_related("category", "roaster", "coffee_profile", "hardware_profile")
             .prefetch_related("variants", "images")
             # Correlated subqueries, not Min()/Max() over the join: a search that
             # filters on variants must not change the price we report.
@@ -134,5 +137,34 @@ class SearchSuggestView(APIView):
             {
                 "products": ProductSuggestionSerializer(products, many=True, context=context).data,
                 "categories": CategorySlimSerializer(categories, many=True, context=context).data,
+            }
+        )
+
+
+class FacetsView(APIView):
+    """Which filters make sense for the category being browsed.
+
+    The rail is not fixed: roast level is meaningless for a drum roaster, and
+    brand is meaningless for a bag of beans. The frontend renders whatever this
+    returns rather than holding its own copy of the mapping.
+    """
+
+    @extend_schema(
+        summary="Filter facets for a category",
+        description=(
+            "Returns the ordered filter list for the given category, with its "
+            "options and labels already localized. Omit `category` for the "
+            "universal set. An unknown or inactive slug degrades to that same "
+            "universal set rather than erroring, matching the product list."
+        ),
+        responses={200: None},
+    )
+    def get(self, request):
+        slug = request.query_params.get("category", "").strip()
+        category = Category.objects.filter(slug=slug, is_active=True).first() if slug else None
+        return Response(
+            {
+                "product_type": category.effective_product_type if category else None,
+                "facets": build_facets(category, get_locale(request)),
             }
         )

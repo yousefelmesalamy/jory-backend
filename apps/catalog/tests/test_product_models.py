@@ -4,8 +4,11 @@ import pytest
 from django.db import IntegrityError, transaction
 
 from apps.catalog.models import (
+    Brand,
     Category,
     CoffeeProfile,
+    HardwareProfile,
+    MachineType,
     Origin,
     Process,
     Product,
@@ -177,3 +180,37 @@ def test_a_product_can_belong_to_a_roaster(coffee_category):
         product_type=ProductType.COFFEE,
     )
     assert list(brand.products.all()) == [item]
+
+
+def test_brand_slugifies_its_name_on_save():
+    assert Brand.objects.create(name="Probat Burns").slug == "probat-burns"
+
+
+def test_hardware_profile_is_reachable_from_its_product(equipment_category):
+    machine = Product.objects.create(
+        name="Shop Roaster 5kg",
+        category=equipment_category,
+        product_type=ProductType.ROASTING_MACHINE,
+    )
+    brand = Brand.objects.create(name="Probat")
+    HardwareProfile.objects.create(
+        product=machine, brand=brand, machine_type=MachineType.DRUM_ROASTER
+    )
+    machine.refresh_from_db()
+    assert machine.hardware_profile.brand == brand
+    assert machine.hardware_profile.machine_type == MachineType.DRUM_ROASTER
+
+
+def test_brand_reverses_to_its_hardware_profiles(equipment_category):
+    """The facets endpoint walks this reverse name to list stocked brands."""
+    brand = Brand.objects.create(name="Giesen")
+    machine = Product.objects.create(
+        name="W6A", category=equipment_category, product_type=ProductType.ROASTING_MACHINE
+    )
+    HardwareProfile.objects.create(product=machine, brand=brand)
+    assert list(brand.hardware_profiles.all()) == [machine.hardware_profile]
+
+
+def test_coffee_product_has_no_hardware_profile(product):
+    with pytest.raises(HardwareProfile.DoesNotExist):
+        product.hardware_profile

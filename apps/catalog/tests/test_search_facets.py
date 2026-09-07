@@ -125,3 +125,52 @@ def test_ordering_combines_with_filters(api_client, priced_catalog):
 def test_search_and_facets_combine(api_client, priced_catalog):
     response = api_client.get("/api/products/?search=coffee&min_price=200&ordering=price")
     assert names_in_order(response) == ["Mid Coffee", "Pricey Coffee"]
+
+
+@pytest.fixture
+def machine_catalog(db, equipment_category):
+    """Two drum roasters from different brands, plus a grinder, all one category."""
+    from apps.catalog.models import Brand, HardwareProfile, MachineType
+
+    made = {}
+    rows = [
+        ("Probat P5", "Probat", MachineType.DRUM_ROASTER, "PROBAT-P5"),
+        ("Giesen W6A", "Giesen", MachineType.DRUM_ROASTER, "GIESEN-W6A"),
+        ("Fellow Ode", "Fellow", MachineType.GRINDER, "FELLOW-ODE"),
+    ]
+    for name, brand_name, machine_type, sku in rows:
+        item = Product.objects.create(
+            name=name, category=equipment_category, product_type=ProductType.ROASTING_MACHINE
+        )
+        brand, _ = Brand.objects.get_or_create(name=brand_name)
+        HardwareProfile.objects.create(product=item, brand=brand, machine_type=machine_type)
+        ProductVariant.objects.create(
+            product=item, sku=sku, label="Default", price=Decimal("500.00"), stock_quantity=1
+        )
+        made[name] = item
+    return made
+
+
+def test_brand_filter_keeps_only_that_brand(api_client, machine_catalog):
+    assert slugs(api_client.get("/api/products/?brand=giesen")) == {"giesen-w6a"}
+
+
+def test_brand_filter_is_case_insensitive(api_client, machine_catalog):
+    assert slugs(api_client.get("/api/products/?brand=GIESEN")) == {"giesen-w6a"}
+
+
+def test_machine_type_filter_narrows_to_that_type(api_client, machine_catalog):
+    assert slugs(api_client.get("/api/products/?machine_type=GRINDER")) == {"fellow-ode"}
+
+
+def test_unknown_brand_returns_empty_not_an_error(api_client, machine_catalog):
+    response = api_client.get("/api/products/?brand=nonesuch")
+    assert response.status_code == 200
+    assert response.data["results"] == []
+
+
+def test_coffee_filter_against_machines_returns_empty_not_an_error(api_client, machine_catalog):
+    """A stale `roast` left over from browsing Coffee must not 500."""
+    response = api_client.get("/api/products/?machine_type=GRINDER&roast=DARK")
+    assert response.status_code == 200
+    assert response.data["results"] == []

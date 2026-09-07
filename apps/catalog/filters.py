@@ -34,6 +34,14 @@ class ProductFilter(django_filters.FilterSet):
     roast = django_filters.CharFilter(
         field_name="coffee_profile__roast_level", lookup_expr="iexact"
     )
+    # The hardware equivalents of origin/process/roast. Same slug-lookup
+    # reasoning: a stale brand slug should come back empty, not 400.
+    brand = django_filters.CharFilter(
+        field_name="hardware_profile__brand__slug", lookup_expr="iexact"
+    )
+    machine_type = django_filters.CharFilter(
+        field_name="hardware_profile__machine_type", lookup_expr="iexact"
+    )
 
     # "Any active variant within the range" — so min_price tests the product's
     # dearest variant and max_price tests its cheapest.
@@ -60,6 +68,7 @@ class ProductFilter(django_filters.FilterSet):
         model = Product
         fields = [
             "search", "category", "roaster", "type", "origin", "process", "roast",
+            "brand", "machine_type",
             "min_price", "max_price", "on_sale", "in_stock", "best_selling",
         ]
 

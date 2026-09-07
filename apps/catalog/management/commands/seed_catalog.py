@@ -6,9 +6,12 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apps.catalog.models import (
+    Brand,
     Category,
     CoffeeProfile,
     Grind,
+    HardwareProfile,
+    MachineType,
     Origin,
     Process,
     Product,
@@ -18,10 +21,19 @@ from apps.catalog.models import (
     Roaster,
 )
 
+# The type drives which filter facets the category exposes. Children inherit it,
+# so only the roots carry one.
 CATEGORIES = [
-    ("Coffee", ["Single Origin", "Blends", "Decaf"]),
-    ("Equipment", ["Grinders", "Brewers", "Kettles"]),
-    ("Roasting Machines", ["Home Roasters", "Shop Roasters"]),
+    ("Coffee", ProductType.COFFEE, ["Single Origin", "Blends", "Decaf"]),
+    ("Equipment", ProductType.EQUIPMENT, ["Grinders", "Brewers", "Kettles"]),
+    ("Roasting Machines", ProductType.ROASTING_MACHINE, ["Home Roasters", "Shop Roasters"]),
+]
+
+BRANDS = [
+    ("Probat", "بروبات", "Germany"),
+    ("Giesen", "جيزن", "Netherlands"),
+    ("Hario", "هاريو", "Japan"),
+    ("Fellow", "فيلو", "United States"),
 ]
 
 ROASTERS = [
@@ -94,6 +106,8 @@ HARDWARE = [
         "name": "Hand Grinder Pro",
         "category": "Grinders",
         "type": ProductType.EQUIPMENT,
+        "brand": "Fellow",
+        "machine_type": MachineType.GRINDER,
         "short_description": "Stainless burrs, 40 clicks of adjustment.",
         "variants": [("JORY-GRIND-HAND", "Default", None, Decimal("1200.00"), None, 12)],
     },
@@ -101,6 +115,8 @@ HARDWARE = [
         "name": "Pour Over Kit",
         "category": "Brewers",
         "type": ProductType.EQUIPMENT,
+        "brand": "Hario",
+        "machine_type": MachineType.BREWER,
         "short_description": "Dripper, server and 100 filters.",
         "variants": [("JORY-BREW-V60", "Default", None, Decimal("650.00"), Decimal("800.00"), 20)],
     },
@@ -108,6 +124,8 @@ HARDWARE = [
         "name": "Gooseneck Kettle 1L",
         "category": "Kettles",
         "type": ProductType.ACCESSORY,
+        "brand": "Hario",
+        "machine_type": MachineType.KETTLE,
         "short_description": "Precise pour, variable temperature.",
         "variants": [("JORY-KETTLE-1L", "1L", None, Decimal("1450.00"), None, 7)],
     },
@@ -115,6 +133,8 @@ HARDWARE = [
         "name": "Home Roaster 300g",
         "category": "Home Roasters",
         "type": ProductType.ROASTING_MACHINE,
+        "brand": "Giesen",
+        "machine_type": MachineType.DRUM_ROASTER,
         "short_description": "Drum roaster for 300g batches with a profile display.",
         "variants": [("JORY-ROAST-300", "300g batch", None, Decimal("18500.00"), None, 3)],
     },
@@ -122,6 +142,8 @@ HARDWARE = [
         "name": "Shop Roaster 5kg",
         "category": "Shop Roasters",
         "type": ProductType.ROASTING_MACHINE,
+        "brand": "Probat",
+        "machine_type": MachineType.DRUM_ROASTER,
         "short_description": "Commercial 5kg drum roaster with airflow control.",
         "variants": [("JORY-ROAST-5K", "5kg batch", None, Decimal("240000.00"), None, 1)],
     },
@@ -135,8 +157,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         categories = self._seed_categories()
         roasters = self._seed_roasters()
+        brands = self._seed_brands()
         self._seed_coffees(categories, roasters)
-        self._seed_hardware(categories)
+        self._seed_hardware(categories, brands)
         self.stdout.write(self.style.SUCCESS(
             f"Catalog ready: {Category.objects.count()} categories, "
             f"{Product.objects.count()} products, {ProductVariant.objects.count()} variants."
@@ -144,10 +167,18 @@ class Command(BaseCommand):
 
     def _seed_categories(self):
         categories = {}
-        for order, (parent_name, child_names) in enumerate(CATEGORIES):
-            parent, _ = Category.objects.get_or_create(
-                name=parent_name, parent=None, defaults={"display_order": order}
+        for order, (parent_name, product_type, child_names) in enumerate(CATEGORIES):
+            parent, created = Category.objects.get_or_create(
+                name=parent_name,
+                parent=None,
+                defaults={"display_order": order, "product_type": product_type},
             )
+            # The type is authoritative in CATEGORIES, so correct a root seeded
+            # before it existed rather than leaving it blank (it would fall back
+            # to COFFEE and offer roast filters on the machines page).
+            if not created and parent.product_type != product_type:
+                parent.product_type = product_type
+                parent.save(update_fields=["product_type"])
             categories[parent_name] = parent
             for child_order, child_name in enumerate(child_names):
                 child, _ = Category.objects.get_or_create(
@@ -183,7 +214,16 @@ class Command(BaseCommand):
             CoffeeProfile.objects.get_or_create(product=product, defaults=profile)
             self._seed_variants(product, entry["variants"], grind=Grind.WHOLE_BEAN)
 
-    def _seed_hardware(self, categories):
+    def _seed_brands(self):
+        brands = {}
+        for name, name_ar, country in BRANDS:
+            brand, _ = Brand.objects.get_or_create(
+                name=name, defaults={"name_ar": name_ar, "country": country}
+            )
+            brands[name] = brand
+        return brands
+
+    def _seed_hardware(self, categories, brands):
         for entry in HARDWARE:
             product, _ = Product.objects.get_or_create(
                 name=entry["name"],
@@ -192,6 +232,13 @@ class Command(BaseCommand):
                     "product_type": entry["type"],
                     "short_description": entry["short_description"],
                     "description": entry["short_description"],
+                },
+            )
+            HardwareProfile.objects.get_or_create(
+                product=product,
+                defaults={
+                    "brand": brands[entry["brand"]],
+                    "machine_type": entry["machine_type"],
                 },
             )
             self._seed_variants(product, entry["variants"])

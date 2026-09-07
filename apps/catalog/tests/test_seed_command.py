@@ -1,7 +1,16 @@
 import pytest
 from django.core.management import call_command
 
-from apps.catalog.models import Category, Origin, Product, ProductType, ProductVariant, Roaster
+from apps.catalog.models import (
+    Brand,
+    Category,
+    HardwareProfile,
+    Origin,
+    Product,
+    ProductType,
+    ProductVariant,
+    Roaster,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -47,3 +56,49 @@ def test_seeding_twice_does_not_duplicate_rows():
         Product.objects.count(),
         ProductVariant.objects.count(),
     ) == counts
+
+
+def test_seed_types_the_root_categories():
+    call_command("seed_catalog")
+    assert Category.objects.get(name="Coffee").product_type == ProductType.COFFEE
+    assert (
+        Category.objects.get(name="Roasting Machines").product_type
+        == ProductType.ROASTING_MACHINE
+    )
+
+
+def test_seeded_child_category_inherits_its_parent():
+    call_command("seed_catalog")
+    assert (
+        Category.objects.get(name="Shop Roasters").effective_product_type
+        == ProductType.ROASTING_MACHINE
+    )
+
+
+def test_seed_gives_every_hardware_product_a_profile():
+    call_command("seed_catalog")
+    hardware = Product.objects.exclude(product_type=ProductType.COFFEE)
+    assert hardware.exists()
+    for item in hardware:
+        assert item.hardware_profile.brand is not None
+        assert item.hardware_profile.machine_type
+
+
+def test_seed_stays_idempotent_with_brands():
+    call_command("seed_catalog")
+    call_command("seed_catalog")
+    assert Brand.objects.filter(name="Probat").count() == 1
+    assert HardwareProfile.objects.count() == Product.objects.exclude(
+        product_type=ProductType.COFFEE
+    ).count()
+
+
+def test_seed_corrects_a_root_typed_before_the_field_existed():
+    """Re-seeding must fix a blank root, or the machines page keeps offering
+    roast filters on an already-seeded database."""
+    Category.objects.create(name="Roasting Machines")
+    call_command("seed_catalog")
+    assert (
+        Category.objects.get(name="Roasting Machines", parent=None).product_type
+        == ProductType.ROASTING_MACHINE
+    )

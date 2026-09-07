@@ -1,6 +1,16 @@
 from django.contrib import admin
 
-from .models import Category, CoffeeProfile, Origin, Product, ProductImage, ProductVariant, Roaster
+from .models import (
+    Brand,
+    Category,
+    CoffeeProfile,
+    HardwareProfile,
+    Origin,
+    Product,
+    ProductImage,
+    ProductVariant,
+    Roaster,
+)
 
 
 class ProductVariantInline(admin.TabularInline):
@@ -24,10 +34,25 @@ class CoffeeProfileInline(admin.StackedInline):
     can_delete = True
 
 
+class HardwareProfileInline(admin.StackedInline):
+    model = HardwareProfile
+    extra = 0
+    max_num = 1
+    can_delete = True
+
+
+@admin.register(Brand)
+class BrandAdmin(admin.ModelAdmin):
+    list_display = ["name", "country", "is_active"]
+    list_filter = ["is_active", "country"]
+    search_fields = ["name", "country"]
+    prepopulated_fields = {"slug": ("name",)}
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "slug", "parent", "is_active", "display_order"]
-    list_filter = ["is_active", "parent"]
+    list_display = ["name", "slug", "parent", "product_type", "is_active", "display_order"]
+    list_filter = ["is_active", "parent", "product_type"]
     search_fields = ["name", "slug"]
     prepopulated_fields = {"slug": ("name",)}
 
@@ -58,7 +83,12 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     # Phase 6 computes these from reviews; a staff edit would be overwritten.
     readonly_fields = ["rating_avg", "rating_count"]
-    inlines = [ProductVariantInline, ProductImageInline, CoffeeProfileInline]
+    inlines = [
+        ProductVariantInline,
+        ProductImageInline,
+        CoffeeProfileInline,
+        HardwareProfileInline,
+    ]
 
 
 @admin.register(ProductVariant)

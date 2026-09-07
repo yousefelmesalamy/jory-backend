@@ -1,6 +1,6 @@
 import pytest
 
-from apps.catalog.models import Category, Origin, Roaster
+from apps.catalog.models import Category, Origin, ProductType, Roaster
 
 pytestmark = pytest.mark.django_db
 
@@ -47,3 +47,33 @@ def test_origin_slug_is_generated_and_string_is_the_name():
     origin = Origin.objects.create(name="Ethiopia")
     assert origin.slug == "ethiopia"
     assert str(origin) == "Ethiopia"
+
+
+def test_category_effective_type_defaults_to_coffee():
+    assert Category.objects.create(name="Misc").effective_product_type == ProductType.COFFEE
+
+
+def test_category_effective_type_uses_its_own_when_set():
+    machines = Category.objects.create(
+        name="Roasting Machines", product_type=ProductType.ROASTING_MACHINE
+    )
+    assert machines.effective_product_type == ProductType.ROASTING_MACHINE
+
+
+def test_child_category_inherits_its_parent_type():
+    """An admin sets three roots, not every child row."""
+    machines = Category.objects.create(
+        name="Roasting Machines", product_type=ProductType.ROASTING_MACHINE
+    )
+    shop = Category.objects.create(name="Shop Roasters", parent=machines)
+    assert shop.effective_product_type == ProductType.ROASTING_MACHINE
+
+
+def test_child_category_own_type_overrides_its_parent():
+    machines = Category.objects.create(
+        name="Roasting Machines", product_type=ProductType.ROASTING_MACHINE
+    )
+    spares = Category.objects.create(
+        name="Spares", parent=machines, product_type=ProductType.ACCESSORY
+    )
+    assert spares.effective_product_type == ProductType.ACCESSORY
