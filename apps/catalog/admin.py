@@ -4,6 +4,7 @@ from .models import (
     Brand,
     Category,
     CoffeeProfile,
+    Flavor,
     HardwareProfile,
     Origin,
     Product,
@@ -67,6 +68,14 @@ class RoasterAdmin(admin.ModelAdmin):
 
 @admin.register(Origin)
 class OriginAdmin(admin.ModelAdmin):
+    list_display = ["name", "name_ar", "slug", "is_active"]
+    list_filter = ["is_active"]
+    search_fields = ["name", "name_ar"]
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(Flavor)
+class FlavorAdmin(admin.ModelAdmin):
     list_display = ["name", "name_ar", "slug", "is_active"]
     list_filter = ["is_active"]
     search_fields = ["name", "name_ar"]

@@ -136,6 +136,28 @@ class Origin(TimeStampedModel):
         return self.name
 
 
+class Flavor(TimeStampedModel):
+    """A flavor note a coffee is sold as (e.g. Vanilla, Hazelnut). A lookup
+    table like Origin, so the API offers a fixed, admin-managed list. Optional
+    on CoffeeProfile: a null flavor means the coffee is unflavored."""
+
+    name = models.CharField(max_length=100, unique=True)
+    name_ar = models.CharField(max_length=100, blank=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class Grind(models.TextChoices):
     WHOLE_BEAN = "WHOLE_BEAN", "Whole bean"
     ESPRESSO = "ESPRESSO", "Espresso"
@@ -344,6 +366,13 @@ class CoffeeProfile(TimeStampedModel):
 
     product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name="coffee_profile")
     origin = models.ForeignKey(Origin, on_delete=models.PROTECT, related_name="coffee_profiles")
+    flavor = models.ForeignKey(
+        Flavor,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="coffee_profiles",
+    )
     region = models.CharField(max_length=120, blank=True)
     farm = models.CharField(max_length=150, blank=True)
     process = models.CharField(max_length=20, choices=Process.choices, blank=True)

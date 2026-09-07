@@ -8,6 +8,7 @@ from .models import (
     ROAST_LEVEL_LABELS_AR,
     Category,
     CoffeeProfile,
+    Flavor,
     Origin,
     Product,
     ProductImage,
@@ -132,15 +133,24 @@ class OriginSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "slug"]
 
 
+class FlavorSerializer(serializers.ModelSerializer):
+    name = LocalizedField()
+
+    class Meta:
+        model = Flavor
+        fields = ["id", "name", "slug"]
+
+
 class CoffeeProfileSerializer(serializers.ModelSerializer):
     origin = OriginSerializer(read_only=True)
+    flavor = FlavorSerializer(read_only=True)
     process = LocalizedChoiceField(PROCESS_LABELS_AR)
     roast_level = LocalizedChoiceField(ROAST_LEVEL_LABELS_AR)
 
     class Meta:
         model = CoffeeProfile
         fields = [
-            "origin", "region", "farm", "process", "variety", "roast_level",
+            "origin", "flavor", "region", "farm", "process", "variety", "roast_level",
             "altitude_masl", "tasting_notes", "harvest_year", "cupping_score",
         ]
 
