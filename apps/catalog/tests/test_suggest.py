@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from apps.catalog.models import Product, ProductType, ProductVariant
+from apps.catalog.models import Product, ProductImage, ProductType, ProductVariant
 
 pytestmark = pytest.mark.django_db
 
@@ -22,6 +22,18 @@ def test_suggest_products_carry_a_price(api_client, product):
     entry = api_client.get("/api/search/suggest/?q=yirga").data["products"][0]
     assert entry["price_from"] == "250.00"
     assert entry["product_type"] == "COFFEE"
+
+
+def test_suggest_products_carry_a_thumbnail(api_client, product):
+    ProductImage.objects.create(product=product, image="products/yirgacheffe.jpg", is_primary=True)
+
+    entry = api_client.get("/api/search/suggest/?q=yirga").data["products"][0]
+    assert entry["primary_image"]["image"].endswith("products/yirgacheffe.jpg")
+
+
+def test_suggest_thumbnail_is_null_when_a_product_has_no_images(api_client, product):
+    entry = api_client.get("/api/search/suggest/?q=yirga").data["products"][0]
+    assert entry["primary_image"] is None
 
 
 def test_suggest_requires_a_query(api_client, product):

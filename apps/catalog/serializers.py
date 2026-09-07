@@ -171,14 +171,23 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 
 class ProductSuggestionSerializer(serializers.ModelSerializer):
-    """Deliberately small: a type-ahead row, not a product card."""
+    """Deliberately small: a type-ahead row, not a product card.
+
+    The thumbnail is the one indulgence — a dropdown of bare names is far
+    harder to scan than one with pictures, and it costs a single prefetch.
+    """
 
     name = LocalizedField()
     price_from = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    primary_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ["id", "name", "slug", "product_type", "price_from"]
+        fields = ["id", "name", "slug", "product_type", "price_from", "primary_image"]
+
+    def get_primary_image(self, obj):
+        image = obj.primary_image
+        return ProductImageSerializer(image, context=self.context).data if image else None
 
 
 class CategoryNameField(serializers.SlugRelatedField):

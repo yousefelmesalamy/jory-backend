@@ -125,7 +125,9 @@ class SearchSuggestView(APIView):
                 | Q(category__name__icontains=term)
                 | Q(roaster__name__icontains=term)
             )
-            .prefetch_related("variants")
+            # `images` joins `variants` here: the suggestion row carries a
+            # thumbnail, and `Product.primary_image` walks the whole set.
+            .prefetch_related("variants", "images")
             .distinct()[:SUGGESTION_LIMIT]
         )
         categories = Category.objects.filter(is_active=True, name__icontains=term)[
