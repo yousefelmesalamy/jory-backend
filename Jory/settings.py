@@ -12,8 +12,11 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, []),
+    CSRF_TRUSTED_ORIGINS=(list, []),
     JWT_ACCESS_MINUTES=(int, 60),
     JWT_REFRESH_DAYS=(int, 7),
+    SECURE_SSL_REDIRECT=(bool, False),
+    SECURE_HSTS_SECONDS=(int, 0),
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
@@ -114,13 +117,44 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))
+
+# DRF's FileField turns `image.url` into an absolute URL with
+# `request.build_absolute_uri()`, which trusts the incoming Host header. Behind
+# any proxy that rewrites Host, that bakes the *proxy's* domain into every image
+# URL and the storefront gets silent 404s. Setting MEDIA_URL to an absolute URL
+# side-steps it: `build_absolute_uri` leaves an already-absolute URL alone.
+# Keep the trailing slash — Django joins on it.
+MEDIA_URL = env("MEDIA_URL", default="media/")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 CORS_EXPOSE_HEADERS = ["X-Cart-Token"]
+
+# The storefront is served from a different origin than the API (Vercel vs. the
+# API host), so the admin's own forms are the only CSRF surface — but Django 4
+# still wants the origin listed once the site is behind TLS.
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
+
+# --- Production hardening ----------------------------------------------------
+# Only applied with DEBUG off, so local development is untouched.
+
+if not DEBUG:
+    # TLS is terminated by the host, which forwards the original scheme. Without
+    # this Django thinks every request is plain HTTP and, with SECURE_SSL_REDIRECT
+    # on, redirects forever.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    # Off by default: hosts that already force HTTPS at the edge make this
+    # redundant, and turning it on before TLS works locks you out of the admin.
+    SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT")
+    SECURE_HSTS_SECONDS = env("SECURE_HSTS_SECONDS")
+
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = "DENY"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
