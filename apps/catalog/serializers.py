@@ -138,7 +138,7 @@ class FlavorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Flavor
-        fields = ["id", "name", "slug"]
+        fields = ["id", "name", "slug", "image"]
 
 
 class CoffeeProfileSerializer(serializers.ModelSerializer):
