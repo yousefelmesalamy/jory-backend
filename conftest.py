@@ -109,7 +109,6 @@ def product(db, category, roaster, origin):
         origin=origin,
         region="Yirgacheffe",
         process=Process.WASHED,
-        variety="Heirloom",
         roast_level=RoastLevel.LIGHT,
         altitude_masl=1900,
         tasting_notes="Jasmine, lemon, black tea",

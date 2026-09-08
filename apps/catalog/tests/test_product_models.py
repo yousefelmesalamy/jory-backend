@@ -157,7 +157,6 @@ def test_coffee_profile_is_optional_and_reachable(catalog_product):
         product=catalog_product,
         origin=Origin.objects.create(name="Ethiopia"),
         process=Process.WASHED,
-        variety="Heirloom",
         roast_level=RoastLevel.LIGHT,
         altitude_masl=1900,
     )

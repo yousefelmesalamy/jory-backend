@@ -375,9 +375,7 @@ class CoffeeProfile(TimeStampedModel):
         related_name="coffee_profiles",
     )
     region = models.CharField(max_length=120, blank=True)
-    farm = models.CharField(max_length=150, blank=True)
     process = models.CharField(max_length=20, choices=Process.choices, blank=True)
-    variety = models.CharField(max_length=150, blank=True)
     roast_level = models.CharField(max_length=20, choices=RoastLevel.choices, blank=True)
     altitude_masl = models.PositiveIntegerField(null=True, blank=True)
     tasting_notes = models.CharField(max_length=300, blank=True)

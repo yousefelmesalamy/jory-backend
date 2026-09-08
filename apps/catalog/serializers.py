@@ -150,7 +150,7 @@ class CoffeeProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoffeeProfile
         fields = [
-            "origin", "flavor", "region", "farm", "process", "variety", "roast_level",
+            "origin", "flavor", "region", "process", "roast_level",
             "altitude_masl", "tasting_notes", "harvest_year", "cupping_score",
         ]
 

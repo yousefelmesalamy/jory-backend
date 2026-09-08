@@ -51,7 +51,6 @@ COFFEES = [
             "origin": "Ethiopia",
             "region": "Yirgacheffe",
             "process": Process.WASHED,
-            "variety": "Heirloom",
             "roast_level": RoastLevel.LIGHT,
             "altitude_masl": 1900,
             "tasting_notes": "Jasmine, lemon, black tea",
@@ -71,7 +70,6 @@ COFFEES = [
             "origin": "Colombia",
             "region": "Huila",
             "process": Process.WASHED,
-            "variety": "Caturra",
             "roast_level": RoastLevel.MEDIUM,
             "altitude_masl": 1700,
             "tasting_notes": "Caramel, red apple, cocoa",
@@ -90,7 +88,6 @@ COFFEES = [
         "profile": {
             "origin": "Brazil / Ethiopia",
             "process": Process.NATURAL,
-            "variety": "Blend",
             "roast_level": RoastLevel.MEDIUM_DARK,
             "tasting_notes": "Dark chocolate, hazelnut, brown sugar",
         },
