@@ -4,6 +4,7 @@ from rest_framework.routers import SimpleRouter
 from .views import (
     CategoryViewSet,
     FacetsView,
+    OriginViewSet,
     ProductViewSet,
     RoasterViewSet,
     SearchSuggestView,
@@ -15,6 +16,7 @@ app_name = "catalog"
 router = SimpleRouter()
 router.register("categories", CategoryViewSet, basename="category")
 router.register("roasters", RoasterViewSet, basename="roaster")
+router.register("origins", OriginViewSet, basename="origin")
 router.register("products", ProductViewSet, basename="product")
 
 urlpatterns = [

@@ -9,10 +9,11 @@ from apps.core.i18n import get_locale
 
 from .facets import build_facets
 from .filters import ProductFilter
-from .models import Category, Product, ProductVariant, Roaster
+from .models import Category, Origin, Product, ProductVariant, Roaster
 from .serializers import (
     CategorySerializer,
     CategorySlimSerializer,
+    OriginSerializer,
     ProductCreateSerializer,
     ProductDetailSerializer,
     ProductListSerializer,
@@ -41,6 +42,13 @@ class RoasterViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Roaster.objects.filter(is_active=True)
     serializer_class = RoasterSerializer
     lookup_field = "slug"
+
+
+class OriginViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Origin.objects.filter(is_active=True)
+    serializer_class = OriginSerializer
+    lookup_field = "slug"
+    pagination_class = None  # A lookup table is small and feeds a filter dropdown.
 
 
 @extend_schema_view(
