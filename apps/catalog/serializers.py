@@ -146,6 +146,7 @@ class CoffeeProfileSerializer(serializers.ModelSerializer):
     flavor = FlavorSerializer(read_only=True)
     process = LocalizedChoiceField(PROCESS_LABELS_AR)
     roast_level = LocalizedChoiceField(ROAST_LEVEL_LABELS_AR)
+    tasting_notes = LocalizedField()
 
     class Meta:
         model = CoffeeProfile

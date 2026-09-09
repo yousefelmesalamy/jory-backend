@@ -4,6 +4,7 @@ import pytest
 
 from apps.catalog.models import (
     CoffeeProfile,
+    Flavor,
     Origin,
     Process,
     Product,
@@ -122,6 +123,26 @@ def test_process_and_roast_filters(api_client, product, category, roaster):
 
     assert slugs(api_client.get("/api/products/?process=NATURAL")) == {"brazil-natural"}
     assert slugs(api_client.get("/api/products/?roast=LIGHT")) == {"ethiopia-yirgacheffe"}
+
+
+def test_flavor_filter(api_client, product, category, roaster):
+    flavored = Product.objects.create(
+        name="Vanilla Blend", category=category, roaster=roaster, product_type=ProductType.COFFEE
+    )
+    CoffeeProfile.objects.create(
+        product=flavored,
+        origin=Origin.objects.create(name="Brazil"),
+        flavor=Flavor.objects.create(name="Vanilla"),
+    )
+    ProductVariant.objects.create(
+        product=flavored, sku="VAN-250", label="250g", price=Decimal("200.00"), stock_quantity=5
+    )
+
+    assert slugs(api_client.get("/api/products/?flavor=vanilla")) == {"vanilla-blend"}
+
+
+def test_an_unknown_flavor_returns_nothing(api_client, product):
+    assert api_client.get("/api/products/?flavor=nope").data["count"] == 0
 
 
 def test_filters_combine(api_client, product, equipment_product):

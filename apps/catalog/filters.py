@@ -34,6 +34,9 @@ class ProductFilter(django_filters.FilterSet):
     roast = django_filters.CharFilter(
         field_name="coffee_profile__roast_level", lookup_expr="iexact"
     )
+    flavor = django_filters.CharFilter(
+        field_name="coffee_profile__flavor__slug", lookup_expr="iexact"
+    )
     # The hardware equivalents of origin/process/roast. Same slug-lookup
     # reasoning: a stale brand slug should come back empty, not 400.
     brand = django_filters.CharFilter(
@@ -67,7 +70,7 @@ class ProductFilter(django_filters.FilterSet):
     class Meta:
         model = Product
         fields = [
-            "search", "category", "roaster", "type", "origin", "process", "roast",
+            "search", "category", "roaster", "type", "origin", "process", "roast", "flavor",
             "brand", "machine_type",
             "min_price", "max_price", "on_sale", "in_stock", "best_selling",
         ]

@@ -379,6 +379,7 @@ class CoffeeProfile(TimeStampedModel):
     roast_level = models.CharField(max_length=20, choices=RoastLevel.choices, blank=True)
     altitude_masl = models.PositiveIntegerField(null=True, blank=True)
     tasting_notes = models.CharField(max_length=300, blank=True)
+    tasting_notes_ar = models.CharField(max_length=300, blank=True)
     harvest_year = models.PositiveIntegerField(null=True, blank=True)
     cupping_score = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
 

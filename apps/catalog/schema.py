@@ -13,7 +13,7 @@ Two dropdowns, deliberately keyed differently:
   the form in Swagger picks the label they know from the admin.
 """
 
-from .models import Category, Origin
+from .models import Category, Flavor, Origin
 
 PRODUCT_LIST_PATH = "/api/products/"
 PRODUCT_CREATE_SCHEMA = "ProductCreate"
@@ -33,6 +33,7 @@ def _add_filter_choices(result):
             Category.objects.filter(is_active=True).values_list("slug", flat=True)
         ),
         "origin": list(Origin.objects.filter(is_active=True).values_list("slug", flat=True)),
+        "flavor": list(Flavor.objects.filter(is_active=True).values_list("slug", flat=True)),
     }
     for parameter in operation.get("parameters", []):
         if parameter["name"] in options:

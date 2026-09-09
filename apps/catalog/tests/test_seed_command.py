@@ -1,9 +1,12 @@
 import pytest
 from django.core.management import call_command
 
+from apps.catalog import seed_data
+from apps.catalog.management.commands.seed_catalog import PACK_IMAGE
 from apps.catalog.models import (
     Brand,
     Category,
+    CoffeeProfile,
     HardwareProfile,
     Origin,
     Product,
@@ -40,10 +43,71 @@ def test_seeded_coffee_has_an_origin_profile_and_equipment_does_not():
 
 
 def test_seeding_creates_an_origin_row_per_distinct_origin():
+    """Asserted against the dataset rather than a copied-out list, so adding a
+    country to seed_data does not silently fail here."""
     call_command("seed_catalog")
-    assert set(Origin.objects.values_list("slug", flat=True)) == {
-        "ethiopia", "colombia", "brazil-ethiopia",
+    assert set(Origin.objects.values_list("name", flat=True)) == {
+        name for name, _ in seed_data.ORIGINS
     }
+
+
+def test_every_seeded_coffee_carries_the_pack_image_as_its_primary():
+    call_command("seed_catalog")
+    coffees = Product.objects.filter(product_type=ProductType.COFFEE)
+    assert coffees.exists()
+    for item in coffees:
+        primary = item.primary_image
+        assert primary is not None, f"{item.name} has no image"
+        assert primary.is_primary
+        assert primary.image.name == PACK_IMAGE
+        assert item.name in primary.alt_text
+
+
+def test_hardware_is_not_given_the_coffee_pack_image():
+    call_command("seed_catalog")
+    for item in Product.objects.exclude(product_type=ProductType.COFFEE):
+        assert item.images.count() == 0, f"{item.name} should not carry the coffee pack"
+
+
+def test_every_seeded_product_is_bilingual():
+    call_command("seed_catalog")
+    for item in Product.objects.all():
+        assert item.name_ar, f"{item.name} has no Arabic name"
+        assert item.short_description_ar, f"{item.name} has no Arabic short description"
+        assert item.description_ar, f"{item.name} has no Arabic description"
+
+
+def test_every_seeded_coffee_has_arabic_tasting_notes():
+    call_command("seed_catalog")
+    for profile in CoffeeProfile.objects.select_related("product"):
+        assert profile.tasting_notes, f"{profile.product.name} has no tasting notes"
+        assert profile.tasting_notes_ar, f"{profile.product.name} has no Arabic tasting notes"
+
+
+def test_marked_down_variants_satisfy_the_sale_constraint():
+    """compare_at_price is derived in the loader; this proves the derivation
+    never lands on or below the price, which the DB would reject."""
+    call_command("seed_catalog")
+    discounted = ProductVariant.objects.filter(compare_at_price__isnull=False)
+    assert discounted.exists()
+    for variant in discounted:
+        assert variant.compare_at_price > variant.price
+        assert variant.is_on_sale
+        assert 0 < variant.discount_percent < 100
+
+
+def test_seeded_skus_are_unique_across_the_catalog():
+    call_command("seed_catalog")
+    skus = list(ProductVariant.objects.values_list("sku", flat=True))
+    assert len(skus) == len(set(skus))
+
+
+def test_green_beans_are_sold_unground_by_the_kilo():
+    call_command("seed_catalog")
+    green = Product.objects.get(slug="green-beans-brazil-santos")
+    for variant in green.variants.all():
+        assert variant.grind == ""
+        assert variant.weight_grams >= 1000
 
 
 def test_seeding_twice_does_not_duplicate_rows():

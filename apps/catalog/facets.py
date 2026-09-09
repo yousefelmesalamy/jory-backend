@@ -13,6 +13,7 @@ from .models import (
     PRODUCT_TYPE_LABELS_AR,
     ROAST_LEVEL_LABELS_AR,
     Brand,
+    Flavor,
     MachineType,
     Origin,
     Process,
@@ -33,7 +34,7 @@ _HARDWARE = (
 
 FACETS_BY_TYPE = {
     ProductType.COFFEE: (
-        "type", "roast", "process", "origin", "roaster",
+        "type", "roast", "process", "origin", "flavor", "roaster",
         "price", "best_selling", "on_sale", "in_stock", "ordering",
     ),
     ProductType.EQUIPMENT: _HARDWARE,
@@ -49,6 +50,7 @@ FACET_KINDS = {
     "roast": CHOICE,
     "process": CHOICE,
     "origin": CHOICE,
+    "flavor": CHOICE,
     "roaster": CHOICE,
     "brand": CHOICE,
     "machine_type": CHOICE,
@@ -64,6 +66,7 @@ FACET_LABELS = {
     "roast": "Roast",
     "process": "Process",
     "origin": "Origin",
+    "flavor": "Flavor",
     "roaster": "Roaster",
     "brand": "Brand",
     "machine_type": "Machine type",
@@ -79,6 +82,7 @@ FACET_LABELS_AR = {
     "roast": "درجة التحميص",
     "process": "المعالجة",
     "origin": "المنشأ",
+    "flavor": "النكهة",
     "roaster": "المحمصة",
     "brand": "العلامة التجارية",
     "machine_type": "نوع الآلة",
@@ -162,6 +166,8 @@ def _options_for(key, category_ids, locale):
         ]
     if key == "origin":
         return _scoped(Origin, "coffee_profiles__product", category_ids, locale)
+    if key == "flavor":
+        return _scoped(Flavor, "coffee_profiles__product", category_ids, locale)
     if key == "roaster":
         return _scoped(Roaster, "products", category_ids, locale)
     if key == "brand":

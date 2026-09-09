@@ -1,6 +1,6 @@
 import pytest
 
-from apps.catalog.models import Category, Origin
+from apps.catalog.models import Category, Flavor, Origin
 
 pytestmark = pytest.mark.django_db
 
@@ -20,6 +20,13 @@ def test_the_origin_filter_is_documented_as_a_select_of_origin_slugs(api_client,
     Origin.objects.create(name="Colombia")
     param = product_filter_param(api_client, "origin")
     assert set(param["schema"]["enum"]) == {"ethiopia", "colombia"}
+
+
+def test_the_flavor_filter_is_documented_as_a_select_of_flavor_slugs(api_client, db):
+    Flavor.objects.create(name="Vanilla")
+    Flavor.objects.create(name="Hazelnut")
+    param = product_filter_param(api_client, "flavor")
+    assert set(param["schema"]["enum"]) == {"vanilla", "hazelnut"}
 
 
 def test_the_best_selling_filter_is_documented_as_a_select_of_windows(api_client):

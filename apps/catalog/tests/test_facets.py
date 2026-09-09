@@ -4,8 +4,11 @@ from apps.catalog.facets import build_facets
 from apps.catalog.models import (
     Brand,
     Category,
+    CoffeeProfile,
+    Flavor,
     HardwareProfile,
     MachineType,
+    Origin,
     Product,
     ProductType,
 )
@@ -31,7 +34,7 @@ def machines():
 def test_coffee_category_offers_bean_attributes(category):
     """The `category` fixture is Coffee > Single Origin, which inherits COFFEE."""
     offered = keys(build_facets(category, "en"))
-    assert {"roast", "process", "origin", "roaster"} <= set(offered)
+    assert {"roast", "process", "origin", "flavor", "roaster"} <= set(offered)
     assert "brand" not in offered
     assert "machine_type" not in offered
 
@@ -46,6 +49,7 @@ def test_machine_category_hides_every_coffee_facet(machines):
     assert "roast" not in offered
     assert "process" not in offered
     assert "origin" not in offered
+    assert "flavor" not in offered
     assert "roaster" not in offered
 
 
@@ -72,6 +76,20 @@ def test_brand_options_list_only_brands_stocked_in_the_subtree(machines):
 
     values = [option["value"] for option in facet(build_facets(machines, "en"), "brand")["options"]]
     assert values == ["probat"]
+
+
+def test_flavor_options_list_only_flavors_stocked_in_the_subtree(category):
+    stocked = Flavor.objects.create(name="Vanilla")
+    Flavor.objects.create(name="Hazelnut")
+    item = Product.objects.create(
+        name="Vanilla Blend", category=category, product_type=ProductType.COFFEE
+    )
+    CoffeeProfile.objects.create(
+        product=item, origin=Origin.objects.create(name="Brazil"), flavor=stocked
+    )
+
+    values = [option["value"] for option in facet(build_facets(category, "en"), "flavor")["options"]]
+    assert values == ["vanilla"]
 
 
 def test_machine_type_options_list_every_choice(machines):
