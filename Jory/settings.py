@@ -18,6 +18,8 @@ env = environ.Env(
     JWT_REFRESH_DAYS=(int, 7),
     SECURE_SSL_REDIRECT=(bool, False),
     SECURE_HSTS_SECONDS=(int, 0),
+    NUM_PROXIES=(int, 1),
+    PASSWORD_RESET_THROTTLE_RATE=(str, "20/hour"),
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
@@ -42,6 +44,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "corsheaders",
     "drf_spectacular",
+    "anymail",
 ]
 
 LOCAL_APPS = [
@@ -165,6 +168,23 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
 
+# DRF's throttle classes bucket by `get_ident()`, which reads the *last*
+# `X-Forwarded-For` hop if NUM_PROXIES is unset — and that header is sent by
+# the client, not appended by our own proxy. Left unset, an attacker can set
+# a fresh X-Forwarded-For value on every request and get a fresh throttle
+# bucket every time, making the password_reset rate limit purely decorative.
+# The deployment sits behind exactly one proxy (PythonAnywhere's nginx), so 1
+# is correct there; env-overridable for other deployment shapes.
+NUM_PROXIES = env("NUM_PROXIES")
+
+# A rate of None disables the scope entirely (DRF's own convention), so the
+# rate limit exists only in production. Locally you re-request a reset link a
+# dozen times while working on the email template, and a 429 that lasts an hour
+# is nothing but a self-inflicted wound. The production rate is deliberately
+# loose too: 5/hour caught real shoppers on shared/NAT'd IPs, where everyone
+# behind the exit address shares one bucket.
+PASSWORD_RESET_THROTTLE_RATE = None if DEBUG else env("PASSWORD_RESET_THROTTLE_RATE")
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -173,6 +193,10 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.StandardResultsSetPagination",
     "PAGE_SIZE": 20,
+    # Scoped only — no DEFAULT_THROTTLE_CLASSES. The one endpoint that sends
+    # mail to an unauthenticated caller opts in; nothing else is affected.
+    "DEFAULT_THROTTLE_RATES": {"password_reset": PASSWORD_RESET_THROTTLE_RATE},
+    "NUM_PROXIES": NUM_PROXIES,
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
@@ -197,6 +221,46 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }
+
+# --- Outbound email ----------------------------------------------------------
+# The deployed API runs on a PythonAnywhere free account, which cannot open
+# outbound SMTP connections at all — free accounts reach the internet only
+# through an HTTP(S) proxy against a host allowlist. Brevo is on that
+# allowlist and Anymail talks to it over HTTPS, so this is the one shape of
+# email that works in production. Locally we just print to the console.
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default=(
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG
+        else "anymail.backends.brevo.EmailBackend"
+    ),
+)
+ANYMAIL = {"BREVO_API_KEY": env("BREVO_API_KEY", default="")}
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Jory <no-reply@jory.test>")
+
+# A missing Brevo key otherwise fails silently: send_password_reset_email()
+# swallows the exception by design (see services.py), so the API would keep
+# answering 200 while no mail ever left the building. DEBUG is True for both
+# local development and the test suite (DJANGO_DEBUG defaults to True there,
+# and neither overrides it before this module executes), so this can only
+# fire against a real, misconfigured production boot.
+if not DEBUG and EMAIL_BACKEND == "anymail.backends.brevo.EmailBackend" and not ANYMAIL["BREVO_API_KEY"]:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        "BREVO_API_KEY is required in production: EMAIL_BACKEND is the Brevo "
+        "backend and DEBUG is off, but no key is set. Every password-reset "
+        "email would fail silently without it."
+    )
+
+# Where the storefront lives. The API renders no shopper-facing pages, so every
+# emailed link is built against this, not against the request's own host.
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:4200")
+
+# One hour. Django's three-day default is far too generous for a credential
+# that travels by email.
+PASSWORD_RESET_TIMEOUT = 3600
 
 # Storefront rules — shipping is configuration, not a table (COD is the only method).
 SHIPPING_FLAT_RATE = Decimal(env("SHIPPING_FLAT_RATE", default="30.00"))

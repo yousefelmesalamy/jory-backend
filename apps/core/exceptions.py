@@ -93,6 +93,15 @@ class ReviewNotPermittedError(DomainError):
     status_code = status.HTTP_403_FORBIDDEN
 
 
+class InvalidResetLinkError(DomainError):
+    # One code for expired, tampered, replayed and unknown-user alike. Telling
+    # them apart would tell an attacker which uids are real and whether a link
+    # has already been spent.
+    code = "invalid_reset_link"
+    message = "This password reset link is invalid or has expired."
+    status_code = status.HTTP_400_BAD_REQUEST
+
+
 def api_exception_handler(exc, context):
     """Render every API error as {"error": {"code", "message", "details"}}."""
     if isinstance(exc, DomainError):
