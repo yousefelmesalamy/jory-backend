@@ -48,6 +48,34 @@ def test_no_category_returns_the_universal_set(api_client):
     assert "type" in keys(response)
 
 
+def test_type_param_alone_returns_that_types_facets(api_client):
+    response = api_client.get(f"/api/facets/?type={ProductType.COFFEE}")
+    assert response.status_code == 200
+    assert response.data["product_type"] == ProductType.COFFEE
+    assert {"roast", "process", "origin"} <= set(keys(response))
+
+
+def test_type_param_for_machines_returns_hardware_facets(api_client):
+    response = api_client.get(f"/api/facets/?type={ProductType.ROASTING_MACHINE}")
+    assert {"brand", "machine_type"} <= set(keys(response))
+    assert "roast" not in keys(response)
+
+
+def test_category_wins_over_a_conflicting_type_param(api_client, category):
+    response = api_client.get(
+        f"/api/facets/?category={category.slug}&type={ProductType.ROASTING_MACHINE}"
+    )
+    assert response.data["product_type"] == ProductType.COFFEE
+    assert "roast" in keys(response)
+
+
+def test_unknown_type_degrades_to_the_universal_set(api_client):
+    response = api_client.get("/api/facets/?type=NONESUCH")
+    assert response.status_code == 200
+    assert response.data["product_type"] is None
+    assert "roast" not in keys(response)
+
+
 def test_unknown_slug_degrades_instead_of_erroring(api_client):
     """Matches filter_category: a browse endpoint should not 404 on a stale slug."""
     response = api_client.get("/api/facets/?category=nonesuch")

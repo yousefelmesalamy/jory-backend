@@ -65,6 +65,49 @@ def test_no_category_falls_back_to_the_universal_set(db):
     assert "brand" not in offered
 
 
+def test_product_type_alone_offers_that_types_facets(db):
+    """Picking Coffee from the type pills, with no category, is as much of a
+    narrowing as picking the Coffee category."""
+    offered = keys(build_facets(None, "en", product_type=ProductType.COFFEE))
+    assert {"roast", "process", "origin", "flavor", "roaster"} <= set(offered)
+    assert "brand" not in offered
+
+
+def test_product_type_alone_offers_hardware_facets_for_machines(db):
+    offered = keys(build_facets(None, "en", product_type=ProductType.ROASTING_MACHINE))
+    assert {"brand", "machine_type"} <= set(offered)
+    assert "roast" not in offered
+
+
+def test_a_chosen_category_outranks_the_product_type(category):
+    """The category is the more specific scope, so it wins the disagreement."""
+    offered = keys(build_facets(category, "en", product_type=ProductType.ROASTING_MACHINE))
+    assert "roast" in offered
+    assert "brand" not in offered
+
+
+def test_unknown_product_type_falls_back_to_the_universal_set(db):
+    offered = keys(build_facets(None, "en", product_type="NONESUCH"))
+    assert "roast" not in offered
+    assert "type" in offered
+
+
+def test_type_scoped_options_list_only_lookups_that_type_stocks(db):
+    """No category to scope by, so the options narrow on the product type."""
+    coffee_category = Category.objects.create(name="Beans", product_type=ProductType.COFFEE)
+    stocked = Flavor.objects.create(name="Vanilla")
+    Flavor.objects.create(name="Hazelnut")
+    item = Product.objects.create(
+        name="Vanilla Blend", category=coffee_category, product_type=ProductType.COFFEE
+    )
+    CoffeeProfile.objects.create(
+        product=item, origin=Origin.objects.create(name="Brazil"), flavor=stocked
+    )
+
+    built = build_facets(None, "en", product_type=ProductType.COFFEE)
+    assert [option["value"] for option in facet(built, "flavor")["options"]] == ["vanilla"]
+
+
 def test_brand_options_list_only_brands_stocked_in_the_subtree(machines):
     shop = Category.objects.create(name="Shop Roasters", parent=machines)
     stocked = Brand.objects.create(name="Probat")

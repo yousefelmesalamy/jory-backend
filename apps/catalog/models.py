@@ -196,14 +196,12 @@ PROCESS_LABELS_AR = {
 class RoastLevel(models.TextChoices):
     LIGHT = "LIGHT", "Light"
     MEDIUM = "MEDIUM", "Medium"
-    MEDIUM_DARK = "MEDIUM_DARK", "Medium dark"
     DARK = "DARK", "Dark"
 
 
 ROAST_LEVEL_LABELS_AR = {
     RoastLevel.LIGHT: "فاتحة",
     RoastLevel.MEDIUM: "متوسطة",
-    RoastLevel.MEDIUM_DARK: "متوسطة إلى داكنة",
     RoastLevel.DARK: "داكنة",
 }
 

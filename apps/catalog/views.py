@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from apps.core.i18n import get_locale
 
-from .facets import build_facets
+from .facets import build_facets, facets_product_type
 from .filters import ProductFilter
 from .models import Category, Origin, Product, ProductVariant, Roaster
 from .serializers import (
@@ -160,21 +160,26 @@ class FacetsView(APIView):
     """
 
     @extend_schema(
-        summary="Filter facets for a category",
+        summary="Filter facets for a category or product type",
         description=(
             "Returns the ordered filter list for the given category, with its "
-            "options and labels already localized. Omit `category` for the "
-            "universal set. An unknown or inactive slug degrades to that same "
-            "universal set rather than erroring, matching the product list."
+            "options and labels already localized. With no `category`, a `type` "
+            "narrows the rail the same way — picking Coffee from the type pills "
+            "says as much as picking the Coffee category. Omit both for the "
+            "universal set. An unknown or inactive slug, or an unknown type, "
+            "degrades to that same universal set rather than erroring, matching "
+            "the product list."
         ),
         responses={200: None},
     )
     def get(self, request):
         slug = request.query_params.get("category", "").strip()
+        product_type = request.query_params.get("type", "").strip()
         category = Category.objects.filter(slug=slug, is_active=True).first() if slug else None
+        locale = get_locale(request)
         return Response(
             {
-                "product_type": category.effective_product_type if category else None,
-                "facets": build_facets(category, get_locale(request)),
+                "product_type": facets_product_type(category, product_type),
+                "facets": build_facets(category, locale, product_type=product_type),
             }
         )
