@@ -3,6 +3,7 @@
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import environ
 from corsheaders.defaults import default_headers
@@ -256,7 +257,36 @@ if not DEBUG and EMAIL_BACKEND == "anymail.backends.brevo.EmailBackend" and not 
 
 # Where the storefront lives. The API renders no shopper-facing pages, so every
 # emailed link is built against this, not against the request's own host.
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:4200")
+LOCAL_HOSTNAMES = ("localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]")
+
+
+def validate_frontend_url(url, debug):
+    """Refuse a localhost storefront URL on a deployed API.
+
+    Getting this wrong fails in the worst possible way: the send succeeds, the
+    API answers 200, and the shopper receives a working-looking email whose
+    link points at their own machine. Nothing in the logs says otherwise, so
+    the deploy looks healthy right up until someone tries to reset a password.
+    """
+    if debug:
+        return url
+
+    host = urlsplit(url).hostname
+    if host is None or host.lower() in LOCAL_HOSTNAMES:
+        from django.core.exceptions import ImproperlyConfigured
+
+        raise ImproperlyConfigured(
+            f"FRONTEND_URL is {url!r}, which is not reachable from a shopper's "
+            "inbox. Set FRONTEND_URL in the deployed .env to the storefront's "
+            "public origin (e.g. https://jory-rust.vercel.app) — password-reset "
+            "emails are built from it."
+        )
+    return url
+
+
+FRONTEND_URL = validate_frontend_url(
+    env("FRONTEND_URL", default="http://localhost:4200"), DEBUG
+)
 
 # One hour. Django's three-day default is far too generous for a credential
 # that travels by email.
