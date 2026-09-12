@@ -14,7 +14,6 @@ def test_secret_key_is_not_the_generated_insecure_default():
 
 def test_storefront_money_settings_are_decimals():
     assert isinstance(settings.SHIPPING_FLAT_RATE, Decimal)
-    assert isinstance(settings.FREE_SHIPPING_THRESHOLD, Decimal)
     assert settings.DEFAULT_CURRENCY
 
 

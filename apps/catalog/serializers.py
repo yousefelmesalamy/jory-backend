@@ -130,7 +130,7 @@ class OriginSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Origin
-        fields = ["id", "name", "slug"]
+        fields = ["id", "name", "slug", "image"]
 
 
 class FlavorSerializer(serializers.ModelSerializer):

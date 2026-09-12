@@ -11,9 +11,7 @@ from apps.reviews.services import has_received_product, recalculate_product_rati
 
 pytestmark = pytest.mark.django_db
 
-SHIPPING = override_settings(
-    SHIPPING_FLAT_RATE=Decimal("30.00"), FREE_SHIPPING_THRESHOLD=Decimal("500.00")
-)
+SHIPPING = override_settings(SHIPPING_FLAT_RATE=Decimal("14.00"))
 
 ADDRESS = {
     "recipient_name": "Shopper One", "phone": "+201000000000", "country": "Egypt",

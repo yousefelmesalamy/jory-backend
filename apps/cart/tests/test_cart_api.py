@@ -8,9 +8,7 @@ from apps.vouchers.models import DiscountType, Voucher
 
 pytestmark = pytest.mark.django_db
 
-SHIPPING = override_settings(
-    SHIPPING_FLAT_RATE=Decimal("30.00"), FREE_SHIPPING_THRESHOLD=Decimal("500.00")
-)
+SHIPPING = override_settings(SHIPPING_FLAT_RATE=Decimal("14.00"))
 
 
 def add(client, variant, quantity=1, token=None):
@@ -56,8 +54,8 @@ def test_the_cart_reports_server_computed_totals(auth_client, variant):
     assert totals == {
         "subtotal": "250.00",
         "discount_total": "0.00",
-        "shipping_cost": "30.00",
-        "grand_total": "280.00",
+        "shipping_cost": "14.00",
+        "grand_total": "264.00",
     }
 
 

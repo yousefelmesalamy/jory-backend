@@ -293,8 +293,9 @@ FRONTEND_URL = validate_frontend_url(
 PASSWORD_RESET_TIMEOUT = 3600
 
 # Storefront rules — shipping is configuration, not a table (COD is the only method).
-SHIPPING_FLAT_RATE = Decimal(env("SHIPPING_FLAT_RATE", default="30.00"))
-FREE_SHIPPING_THRESHOLD = Decimal(env("FREE_SHIPPING_THRESHOLD", default="500.00"))
+# The flat rate is charged on every order regardless of size; a FREE_SHIPPING
+# voucher is now the only thing that waives it.
+SHIPPING_FLAT_RATE = Decimal(env("SHIPPING_FLAT_RATE", default="14.00"))
 DEFAULT_CURRENCY = env("DEFAULT_CURRENCY", default="EGP")
 
 # --- Admin dashboard (django-jazzmin) ---------------------------------------

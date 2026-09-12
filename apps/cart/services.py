@@ -77,11 +77,7 @@ def calculate_totals(cart):
             "grand_total": zero,
         }
 
-    shipping = (
-        to_money(0)
-        if subtotal >= settings.FREE_SHIPPING_THRESHOLD
-        else to_money(settings.SHIPPING_FLAT_RATE)
-    )
+    shipping = to_money(settings.SHIPPING_FLAT_RATE)
 
     discount = to_money(0)
     voucher = cart.voucher

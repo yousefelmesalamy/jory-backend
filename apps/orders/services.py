@@ -67,11 +67,7 @@ def place_order(user, cart, address_data):
         subtotal += to_money(variant.price * item.quantity)
 
     subtotal = to_money(subtotal)
-    shipping = (
-        to_money(0)
-        if subtotal >= settings.FREE_SHIPPING_THRESHOLD
-        else to_money(settings.SHIPPING_FLAT_RATE)
-    )
+    shipping = to_money(settings.SHIPPING_FLAT_RATE)
 
     discount = to_money(0)
     voucher = cart.voucher

@@ -122,6 +122,7 @@ class Origin(TimeStampedModel):
     name = models.CharField(max_length=100, unique=True)
     name_ar = models.CharField(max_length=100, blank=True)
     slug = models.SlugField(max_length=120, unique=True, blank=True)
+    image = models.ImageField(upload_to="origins/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:

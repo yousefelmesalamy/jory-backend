@@ -92,6 +92,15 @@ def test_the_product_detail_includes_variants_and_the_coffee_profile(api_client,
     assert response.data["coffee_profile"]["process"]["value"] == "WASHED"
 
 
+def test_origin_payloads_carry_an_image_that_is_null_when_none_was_uploaded(api_client, product):
+    # The image is optional, so the key must still be present for clients.
+    listed = api_client.get("/api/origins/").data[0]
+    assert listed["image"] is None
+
+    detail = api_client.get("/api/products/ethiopia-yirgacheffe/")
+    assert detail.data["coffee_profile"]["origin"]["image"] is None
+
+
 def test_variant_payloads_expose_the_derived_sale_fields(api_client, product):
     discounted = product.variants.get(sku="JORY-ETH-250")
     discounted.compare_at_price = Decimal("500.00")

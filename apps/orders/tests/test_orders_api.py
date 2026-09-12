@@ -9,9 +9,7 @@ from apps.vouchers.models import DiscountType, Voucher
 
 pytestmark = pytest.mark.django_db
 
-SHIPPING = override_settings(
-    SHIPPING_FLAT_RATE=Decimal("30.00"), FREE_SHIPPING_THRESHOLD=Decimal("500.00")
-)
+SHIPPING = override_settings(SHIPPING_FLAT_RATE=Decimal("14.00"))
 
 INLINE_ADDRESS = {
     "recipient_name": "Shopper One",
@@ -47,7 +45,7 @@ def test_checkout_creates_an_order(auth_client, variant):
     assert response.data["order_number"].startswith("JORY-")
     assert response.data["status"] == "PENDING"
     assert response.data["payment_method"] == "COD"
-    assert response.data["grand_total"] == "500.00"
+    assert response.data["grand_total"] == "514.00"
     assert response.data["placed_at"]
     assert len(response.data["items"]) == 1
 
@@ -110,7 +108,7 @@ def test_the_client_cannot_dictate_the_total(auth_client, variant):
         "/api/orders/", dict(INLINE_ADDRESS, grand_total="1.00", subtotal="1.00"), format="json"
     )
     assert response.status_code == 201
-    assert response.data["grand_total"] == "500.00"
+    assert response.data["grand_total"] == "514.00"
 
 
 @SHIPPING
@@ -129,7 +127,7 @@ def test_a_voucher_carries_onto_the_order(auth_client, variant):
     response = auth_client.post("/api/orders/", INLINE_ADDRESS, format="json")
     assert response.data["voucher_code"] == "TEN"
     assert response.data["discount_total"] == "50.00"
-    assert response.data["grand_total"] == "450.00"
+    assert response.data["grand_total"] == "464.00"
 
 
 @SHIPPING

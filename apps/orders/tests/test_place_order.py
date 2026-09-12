@@ -18,9 +18,7 @@ from apps.vouchers.models import DiscountType, Voucher, VoucherRedemption
 
 pytestmark = pytest.mark.django_db
 
-SHIPPING = override_settings(
-    SHIPPING_FLAT_RATE=Decimal("30.00"), FREE_SHIPPING_THRESHOLD=Decimal("500.00")
-)
+SHIPPING = override_settings(SHIPPING_FLAT_RATE=Decimal("14.00"))
 
 ADDRESS = {
     "recipient_name": "Shopper One",
@@ -57,8 +55,8 @@ def test_placing_an_order_records_the_totals(user, filled_cart):
     assert order.payment_method == "COD"
     assert order.subtotal == Decimal("500.00")
     assert order.discount_total == Decimal("0.00")
-    assert order.shipping_cost == Decimal("0.00")  # free at the threshold
-    assert order.grand_total == Decimal("500.00")
+    assert order.shipping_cost == Decimal("14.00")  # flat, on every order
+    assert order.grand_total == Decimal("514.00")
 
 
 @SHIPPING
@@ -181,7 +179,7 @@ def test_a_voucher_is_applied_and_recorded(user, filled_cart):
     order = place_order(user, filled_cart, ADDRESS)
 
     assert order.discount_total == Decimal("50.00")
-    assert order.grand_total == Decimal("450.00")
+    assert order.grand_total == Decimal("464.00")
     assert order.voucher_code == "TEN"
 
     voucher.refresh_from_db()

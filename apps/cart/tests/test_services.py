@@ -17,11 +17,9 @@ from apps.vouchers.models import DiscountType, Voucher
 
 pytestmark = pytest.mark.django_db
 
-# 30.00 flat, free over 500.00 — matches .env; pinned so the tests do not drift
-# if the shop changes its rates.
-SHIPPING = override_settings(
-    SHIPPING_FLAT_RATE=Decimal("30.00"), FREE_SHIPPING_THRESHOLD=Decimal("500.00")
-)
+# 14.00 flat on every order — matches .env; pinned so the tests do not drift
+# if the shop changes its rate.
+SHIPPING = override_settings(SHIPPING_FLAT_RATE=Decimal("14.00"))
 
 
 def test_resolve_creates_a_cart_for_a_new_user(user):
@@ -127,22 +125,23 @@ def test_totals_for_an_empty_cart(user):
 
 
 @SHIPPING
-def test_totals_charge_flat_shipping_below_the_threshold(user, variant):
+def test_totals_charge_flat_shipping(user, variant):
     cart, _ = resolve_cart(user=user, session_token=None)
     add_item(cart, variant, 1)  # 250.00
     totals = calculate_totals(cart)
     assert totals["subtotal"] == Decimal("250.00")
-    assert totals["shipping_cost"] == Decimal("30.00")
-    assert totals["grand_total"] == Decimal("280.00")
+    assert totals["shipping_cost"] == Decimal("14.00")
+    assert totals["grand_total"] == Decimal("264.00")
 
 
 @SHIPPING
-def test_shipping_is_free_at_the_threshold(user, variant):
+def test_a_large_cart_pays_the_same_flat_shipping(user, variant):
+    """No free-shipping threshold: size buys no discount, only a voucher does."""
     cart, _ = resolve_cart(user=user, session_token=None)
     add_item(cart, variant, 2)  # 500.00
     totals = calculate_totals(cart)
-    assert totals["shipping_cost"] == Decimal("0.00")
-    assert totals["grand_total"] == Decimal("500.00")
+    assert totals["shipping_cost"] == Decimal("14.00")
+    assert totals["grand_total"] == Decimal("514.00")
 
 
 @SHIPPING
@@ -156,8 +155,8 @@ def test_a_percent_voucher_discounts_the_subtotal_only(user, variant):
 
     totals = calculate_totals(cart)
     assert totals["discount_total"] == Decimal("25.00")
-    assert totals["shipping_cost"] == Decimal("30.00")
-    assert totals["grand_total"] == Decimal("255.00")
+    assert totals["shipping_cost"] == Decimal("14.00")
+    assert totals["grand_total"] == Decimal("239.00")
 
 
 @SHIPPING
@@ -188,7 +187,7 @@ def test_a_voucher_that_stopped_qualifying_is_ignored_in_the_totals(user, varian
     # The shopper removed items after applying the code; no discount, no crash.
     totals = calculate_totals(cart)
     assert totals["discount_total"] == Decimal("0.00")
-    assert totals["grand_total"] == Decimal("280.00")
+    assert totals["grand_total"] == Decimal("264.00")
 
 
 def test_merging_moves_guest_lines_into_the_user_cart(user, product):
